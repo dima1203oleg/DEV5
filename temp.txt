@@ -1,0 +1,25 @@
+                <button
+                  onClick={() => {
+                    setShowLargeExportConfirmation(false);
+                    setPendingExportType(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800/60 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  Скасувати
+                </button>
+                <button
+                  onClick={confirmAndExecuteExport}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-lg shadow-rose-950/20 cursor-pointer transition-colors"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>Так, продовжити експорт</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+    </div>
+  );
+}

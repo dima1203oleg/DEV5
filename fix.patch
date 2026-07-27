@@ -1,0 +1,75 @@
+--- src/components/AutonomousFactory.tsx
++++ src/components/AutonomousFactory.tsx
+@@ -1035,46 +1035,16 @@
+             {/* ADIP Grid Overview */}
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+               {/* Mission Statement */}
+               <div className="bg-slate-950/60 border border-slate-900 hover:border-slate-800 transition-all rounded-xl p-5 relative overflow-hidden flex flex-col justify-center min-h-[160px]">
+                 <div className="absolute top-0 right-0 w-80 h-80 bg-pink-500/5 blur-3xl pointer-events-none" />
+-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-900/60 pb-4 mb-4 gap-4">
+-                <div>
+-                  <div className="flex items-center gap-2 mb-1.5">
+-                    <span className="text-[9px] bg-pink-500/10 text-pink-400 border border-pink-500/20 px-2 py-0.5 rounded font-mono font-bold uppercase tracking-widest animate-pulse">
+-                      Google Antigravity Agent Mode Active
+-                    </span>
+-                    <span className="text-[9px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded font-mono font-bold uppercase tracking-widest">
+-                      vNext Platform Spec
+-                    </span>
+-                  </div>
+-                  <h2 className="text-sm font-black tracking-widest text-slate-100 uppercase font-mono">
+-                    PREDATOR Analytics vNext — AI Intelligence Acquisition Platform
+-                  </h2>
+-                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+-                    Повністю автономна система виявлення, генерації та самовідновлення конекторів без участі людини
+-                  </p>
+-                </div>
+-                <button
+-                  onClick={() => {
+-                    const docContent = `\# PREDATOR Analytics vNext — AI Connector Factory
+-## Повністю автономна система генерації, підтримки та самовідновлення конекторів
+-### ROLE
+-Ти — Google Antigravity Agent Mode.
+-Ти головний AI Architect, AI Software Engineer, AI DevOps Engineer, AI Data Engineer, AI QA Engineer та AI Site Reliability Engineer платформи PREDATOR Analytics. Ти відповідаєш за повний життєвий цикл усіх конекторів.
+-### GLOBAL GOAL
+-Побудувати повністю автономну платформу Connector Factory, яка сама створює, тестує, виправляє, оновлює та підтримує будь-який новий конектор без участі людини.
+-### TECHNOLOGY STACK
+-- Databases: PostgreSQL, ClickHouse, Neo4j, Qdrant, OpenSearch, Redis, DuckDB
+-- Orchestration & Deploy: ArgoCD, GitOps, Helm, Kubernetes, Docker
+-### ARCHITECTURE
+-1. Discovery Engine: Автоматичний парсинг Swagger, OpenAPI, WSDL, JSON/XML схем.
+-2. Connector Factory (Code Generator): Авто-генерація Python-клієнтів, Pydantic моделей та інкрементальних ETL-конвеєрів.
+-3. Validation Engine: Code Review (Ruff, Semgrep, Bandit) + AI QA (pytest, playwright) + AI Data Validation.
+-4. Self-Healing Engine: Автоматичне виявлення Schema Drift, виправлення, регресійне тестування та автоматичний деплой.
+-5. Cognitive Integration: Neo4j Graph Builder, Qdrant Multilingual-E5 Embeddings.`;
+-                    const blob = new Blob([docContent], { type: 'text/plain' });
+-                    const url = URL.createObjectURL(blob);
+-                    const link = document.createElement('a');
+-                    link.href = url;
+-                    link.download = 'connector_factory_vnext.md';
+-                    link.click();
+-                    URL.revokeObjectURL(url);
+-                  }}
+-                  className="px-3 py-1.5 cursor-pointer bg-pink-950/20 hover:bg-pink-950/40 text-pink-400 border border-pink-500/30 text-[9px] font-mono font-bold uppercase transition-all rounded flex items-center gap-1.5"
+-                >
+-                  <Download className="w-3.5 h-3.5" />
+-                  Експорт Маніфесту (.md)
+-                </button>
+-              </div>
+-              {/* Roles Section */}
+-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
++                <div className="relative z-10 space-y-4">
++                  <div className="flex items-center gap-3">
++                    <div className="w-10 h-10 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center shrink-0">
++                      <Bot className="w-5 h-5 text-pink-400" />
++                    </div>
++                    <div>
++                      <h3 className="text-xs font-black tracking-widest text-slate-100 uppercase font-mono">MISSION</h3>
++                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">Autonomous intelligence acquisition.</p>
++                    </div>
++                  </div>
++                  <p className="text-[11px] text-slate-300 leading-relaxed font-mono">
++                    Ця архітектура перетворює PREDATOR з платформи ручного збору даних на автономну <span className="text-pink-400 font-bold">AI Intelligence Acquisition Platform</span>, яка сама знаходить нові джерела та інтегрує їх.
++                  </p>
++                </div>
++              </div>
++              {/* Roles Section */}
