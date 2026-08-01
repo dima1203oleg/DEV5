@@ -6,6 +6,13 @@ import { WebSocketServer } from "ws";
 import { LiveServerMessage, Modality } from "@google/genai";
 import { setupCkanRoutes } from "./server/connectors/ckan/api";
 
+import predatorRoutes from "./server/routes/predatorRoutes";
+import aiRoutes from "./server/routes/aiRoutes";
+import connectorRoutes from "./server/routes/connectorRoutes";
+import auditRoutes from "./server/routes/auditRoutes";
+import mediaRoutes from "./server/routes/mediaRoutes";
+import { createRateLimiter } from "./server/middleware/rateLimiter";
+
 import { GoogleGenAI, Type, ThinkingLevel, GenerateVideosOperation } from "@google/genai";
 import dotenv from "dotenv";
 
@@ -15,6 +22,16 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '50mb' }));
+
+// Apply Rate Limiter Middleware for API endpoints
+app.use("/api/", createRateLimiter(200, 60000));
+
+// Mount DEV5 v2.0 Architecture Upgrade Routes
+app.use("/api/v1/predator", predatorRoutes);
+app.use("/api/v1/ai", aiRoutes);
+app.use("/api/v1/connectors", connectorRoutes);
+app.use("/api/v1/audit", auditRoutes);
+app.use("/api/v1/media", mediaRoutes);
 
 // Initialize CKAN Routes
 setupCkanRoutes(app);
@@ -1201,6 +1218,29 @@ function setupWss(server: any) {
 Твій голос — глибокий, стриманий та впевнений (noir detective / forensic intelligence officer).
 Мова спілкування — виключно Українська.
 
+КЕРУВАННЯ ГОЛОСОМ ТА ІНТЕРАКТИВНИЙ РЕЖИМ:
+Ти вмієш керувати інтерфейсом додатку за допомогою інструментів (tools). Якщо користувач просить відкрити, переключити на певну панель чи вкладку, негайно викликай інструмент ` + "`" + `changeTab` + "`" + ` з відповідним ` + "`" + `tabId` + "`" + `.
+Доступні tabId:
+- "dashboard" — головна панель / дашборд;
+- "investigation-workspace" — робочий простір / детективне лоббі;
+- "live-analytical-center" — аналітичний центр NEXUS;
+- "ckan-explorer" — провідник реєстрів / CKAN explorer;
+- "osint" — пошуковий стіл OSINT;
+- "person-profiler" — профайлер осіб;
+- "media-forensics" — медіа експертиза;
+- "sandbox" — аналітична пісочниця;
+- "maps" — інтерактивна карта;
+- "admin-back-office" — адмін-панель / бек-офіс;
+- "predator-control" — контроль Predator;
+- "data-ingestion" — імпорт даних;
+- "audit-log" — логи аудиту;
+- "autonomous-factory" — автономна фабрика.
+
+Якщо користувач просить знайти чи здійснити пошук інформації про особу, компанію, телефон, ІПН, або інший об'єкт, використовуй інструмент ` + "`" + `triggerOsintSearch` + "`" + ` з відповідним пошуковим запитом, а також переключи вкладку на ` + "`" + `osint` + "`" + ` за допомогою інструменту ` + "`" + `changeTab` + "`" + `.
+Якщо користувач просить запустити сканування, перевірити чи запустити аудит безпеки/системи, використовуй інструмент ` + "`" + `triggerSystemScan` + "`" + `.
+
+Після виклику інструменту продовжуй спілкування українською мовою та розкажи користувачеві про виконану дію своїм глибоким голосом.
+
 ГОЛОВНІ ПРАВИЛА ФАКТОЛОГІЧНОЇ ТОЧНОСТІ ТА ВЕРИФІКАЦІЇ:
 1. КРИТИЧНА ТОЧНІСТЬ ДАНИХ: Надавай суворі, перевірені факти. НІКОЛИ не вигадуй фейкові коди ЄДРПОУ, вигадані прізвища, судові справи чи неіснуючі компанії як реальні факти. Якщо дані є аналітичною гіпотезою — прямо наголошуй про це.
 2. СУВОРЕ РОЗДІЛЕННЯ: Чітко зазначай різницю між "ПІДТВЕРДЖЕНИМИ ДАНИМИ ДЕРЖАВНИХ РЕЄСТРІВ" та "ОПЕРАТИВНОЮ ГІПОТЕЗОЮ / АНАЛІТИКОЮ".
@@ -1213,37 +1253,106 @@ function setupWss(server: any) {
    - Автотранспорт (МВС) та Нерухомість (ДРРП).
 4. ВЕРИФІКАЦІЯ НЕВЕДОМОГО: Якщо конкретний об'єкт відсутній або вимагає розширеного пошуку в реальному часі, прямо відповідай: "Дані потребують прямої верифікації в офіційному реєстрі (ЄДРПОУ/ЄДРСР)" та надавай чіткі інструкції з пошуку.
 5. ЛАКOНІЧНІСТЬ ТА СТИЛЬ: Говори стисло, холодно, за ділом, без рекламних слів та гіпербол. Головне — факти, структура та розвідувальна цінність.`,
-        outputAudioTranscription: {},
-        inputAudioTranscription: {},
+          outputAudioTranscription: {},
+          inputAudioTranscription: {},
+          tools: [
+            {
+              functionDeclarations: [
+                {
+                  name: "changeTab",
+                  description: "Змінити поточну вкладку або екран у додатку MARIARTI PREDATOR.",
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      tabId: {
+                        type: Type.STRING,
+                        description: "Ідентифікатор вкладки (наприклад: maps, dashboard, osint, live-analytical-center)."
+                      }
+                    },
+                    required: ["tabId"]
+                  }
+                },
+                {
+                  name: "triggerOsintSearch",
+                  description: "Запустити пошук OSINT за вказаним запитом (ім'я особи, назва компанії, номер телефону, email, ІПН, або ЄДРПОУ).",
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      query: {
+                        type: Type.STRING,
+                        description: "Рядок пошукового запиту."
+                      }
+                    },
+                    required: ["query"]
+                  }
+                },
+                {
+                  name: "triggerSystemScan",
+                  description: "Запустити аудит та сканування системи на вразливості, загрози чи оновлення даних.",
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {}
+                  }
+                }
+              ]
+            }
+          ]
         },
         callbacks: {
-          
-        onmessage: (message) => {
-          const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
-          const textPart = message.serverContent?.modelTurn?.parts?.find(p => p.text);
-          const text = textPart ? textPart.text : undefined;
-          
-          let transcript = "";
-          if (message.serverContent?.modelTurn?.parts) {
-            for (const p of message.serverContent.modelTurn.parts) {
-              if (p.text) transcript += p.text;
+          onmessage: (message) => {
+            // Handle tool calls from the Live API model
+            if (message.toolCall?.functionCalls) {
+              for (const call of message.toolCall.functionCalls) {
+                const { name, id, args } = call;
+                console.log(`[LIVE API TOOL CALL] Executing function: ${name}`, args);
+
+                // Send control command to client
+                clientWs.send(JSON.stringify({
+                  type: "command",
+                  command: name,
+                  args: args
+                }));
+
+                // Reply back to Live session to acknowledge completion
+                try {
+                  session.sendToolResponse({
+                    functionResponses: [
+                      {
+                        name: name,
+                        id: id,
+                        response: { output: { success: true, message: `Command ${name} executed successfully` } }
+                      }
+                    ]
+                  });
+                } catch (resError) {
+                  console.error("Error sending tool response:", resError);
+                }
+              }
             }
-          }
 
-          let responseObj: any = {};
-          if (audio) responseObj.audio = audio;
-          if (transcript) responseObj.text = transcript;
-          if (message.serverContent?.interrupted) responseObj.interrupted = true;
-          
-          if (Object.keys(responseObj).length > 0) {
-            clientWs.send(JSON.stringify(responseObj));
-          }
-        },
+            const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+            const textPart = message.serverContent?.modelTurn?.parts?.find(p => p.text);
+            const text = textPart ? textPart.text : undefined;
+            
+            let transcript = "";
+            if (message.serverContent?.modelTurn?.parts) {
+              for (const p of message.serverContent.modelTurn.parts) {
+                if (p.text) transcript += p.text;
+              }
+            }
 
+            let responseObj: any = {};
+            if (audio) responseObj.audio = audio;
+            if (transcript) responseObj.text = transcript;
+            if (message.serverContent?.interrupted) responseObj.interrupted = true;
+            
+            if (Object.keys(responseObj).length > 0) {
+              clientWs.send(JSON.stringify(responseObj));
+            }
+          },
         },
       });
 
-      
       clientWs.on("message", (data) => {
         try {
           const parsed = JSON.parse(data.toString());
@@ -1260,8 +1369,11 @@ function setupWss(server: any) {
         }
       });
       clientWs.on("close", () => {
-        // We cannot close session directly, just let it disconnect or send end message?
-        // Actually session.close() is missing or not exposed in all versions, we might just leave it to GC or close connection on client side.
+        try {
+          session.close();
+        } catch(e) {
+          console.error("Error closing Live API session:", e);
+        }
       });
     } catch(err) {
       console.error("Live connect error", err);

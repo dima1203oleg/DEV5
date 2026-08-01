@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Search, Database, FileText, Table, AlertCircle, Loader, HardDrive, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Database, FileText, Table, AlertCircle, Loader, HardDrive, RefreshCw, Activity, CheckCircle2 } from 'lucide-react';
 import { useToast } from './ToastProvider';
+import { ckanConnector, ConnectorHealthStatus } from '../services/ConnectorSDK';
 
 export default function CKANExplorerTab() {
   const { showToast } = useToast();
@@ -11,7 +12,19 @@ export default function CKANExplorerTab() {
   const [selectedResource, setSelectedResource] = useState<any | null>(null);
   const [schema, setSchema] = useState<any | null>(null);
   const [records, setRecords] = useState<any[]>([]);
-  
+  const [healthStatus, setHealthStatus] = useState<ConnectorHealthStatus | null>(null);
+
+  const connectorMeta = ckanConnector.metadata();
+
+  const checkConnectorHealth = async () => {
+    const status = await ckanConnector.health();
+    setHealthStatus(status);
+  };
+
+  useEffect(() => {
+    checkConnectorHealth();
+  }, []);
+
   const searchDatasets = async () => {
     if (!query) return;
     setLoading(true);
@@ -19,11 +32,10 @@ export default function CKANExplorerTab() {
     setSelectedDataset(null);
     setSelectedResource(null);
     try {
-      const res = await fetch(`/api/v1/ckan/datasets?q=${encodeURIComponent(query)}&rows=15`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setDatasets(data);
-      showToast(`Знайдено ${data.length} наборів даних з data.gov.ua`, 'success');
+      const result = await ckanConnector.search({ query, limit: 15 });
+      if (!result.success || result.error) throw new Error(result.error || 'Не вдалося завантажити набори даних');
+      setDatasets(result.items);
+      showToast(`Знайдено ${result.items.length} наборів даних через ${connectorMeta.name}`, 'success');
     } catch (err: any) {
       showToast(err.message, 'error');
     } finally {
@@ -38,20 +50,20 @@ export default function CKANExplorerTab() {
     setLoading(true);
     try {
       if (resource.datastore_active) {
-        // Load schema
-        const schemaRes = await fetch(`/api/v1/ckan/schema/${resource.resource_id}`);
-        const schemaData = await schemaRes.json();
-        if (!schemaData.error) setSchema(schemaData);
+        // Load schema via SDK
+        const schemaRes = await ckanConnector.fetchResourceSchema(resource.resource_id);
+        if (schemaRes.success && schemaRes.schema) {
+          setSchema(schemaRes.schema);
+        }
 
-        // Load records
-        const recordsRes = await fetch('/api/v1/ckan/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resource_id: resource.resource_id, limit: 50 })
-        });
-        const recordsData = await recordsRes.json();
-        if (!recordsData.error) setRecords(recordsData.records);
-        showToast('Дані успішно завантажено з DataStore', 'success');
+        // Load records via SDK
+        const dataRes = await ckanConnector.fetchResourceData(resource.resource_id, 50);
+        if (dataRes.success && dataRes.records) {
+          setRecords(dataRes.records);
+          showToast('Дані успішно завантажено та нормалізовано з DataStore SDK', 'success');
+        } else if (dataRes.error) {
+          throw new Error(dataRes.error);
+        }
       } else {
         showToast('Цей ресурс не підтримує DataStore (лише завантаження файлу)', 'warning');
       }
@@ -64,14 +76,27 @@ export default function CKANExplorerTab() {
 
   return (
     <div className="h-full flex flex-col space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-end">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-end border-b border-slate-800 pb-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 font-bold uppercase">
+              SDK: {connectorMeta.id} (v{connectorMeta.version})
+            </span>
+            {healthStatus && (
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border flex items-center gap-1 font-bold ${
+                healthStatus.status === 'ONLINE' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+              }`}>
+                <Activity className="w-3 h-3 animate-pulse" />
+                {healthStatus.status} ({healthStatus.latencyMs}ms)
+              </span>
+            )}
+          </div>
           <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3 leading-tight">
             <Database className="w-6 h-6 text-indigo-400 shrink-0" />
-            Універсальний CKAN Конектор (data.gov.ua)
+            {connectorMeta.name}
           </h2>
-          <p className="text-sm sm:text-base text-slate-400 mt-2">
-            Пряме підключення до відкритих даних України. Виявлення схем, DataStore SQL та нормалізація.
+          <p className="text-sm sm:text-base text-slate-400 mt-1">
+            {connectorMeta.description}. Нормалізація типів даних та розпізнавання схем через `ConnectorSDK`.
           </p>
         </div>
       </div>

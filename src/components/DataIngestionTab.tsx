@@ -51,6 +51,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  onSnapshot,
 } from "firebase/firestore";
 
 // Define the 17 Platform Stages as requested by the user
@@ -1053,19 +1054,16 @@ export default function DataIngestionTab() {
     return s.processingZone === zoneFilter;
   });
 
-  // Load custom registries from Firestore on mount
+  // Subscribe to live custom registries from Firestore in real time
   useEffect(() => {
-    const fetchCustomRegistries = async () => {
-      try {
-        const querySnapshot = await getDocs(
-          collection(db, "custom_registries"),
-        );
+    const unsub = onSnapshot(
+      collection(db, "custom_registries"),
+      (querySnapshot) => {
         const customs: IngestSource[] = [];
-        querySnapshot.forEach((doc) => {
-          customs.push(doc.data() as IngestSource);
+        querySnapshot.forEach((docSnap) => {
+          customs.push(docSnap.data() as IngestSource);
         });
         if (customs.length > 0) {
-          // Merge customs, avoiding duplicates
           setSources((prev) => {
             const filtered = prev.filter(
               (p) => !customs.some((c) => c.id === p.id),
@@ -1073,12 +1071,13 @@ export default function DataIngestionTab() {
             return [...filtered, ...customs];
           });
         }
-      } catch (err) {
-        console.error("Error fetching custom registries from Firestore:", err);
+      },
+      (err) => {
+        console.error("Error subscribing custom registries from Firestore:", err);
         handleFirestoreError(err, OperationType.LIST, "custom_registries");
       }
-    };
-    fetchCustomRegistries();
+    );
+    return () => unsub();
   }, []);
 
   // Initialize logs

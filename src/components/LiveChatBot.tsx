@@ -97,6 +97,27 @@ export function LiveChatBot() {
 
     ws.onmessage = async (event) => {
       const msg = JSON.parse(event.data);
+      if (msg.type === "command") {
+        console.log("[LIVE API COMMAND]", msg.command, msg.args);
+        if (msg.command === "changeTab" && msg.args?.tabId) {
+          const ev = new CustomEvent("change-active-tab", { detail: msg.args.tabId });
+          window.dispatchEvent(ev);
+        } else if (msg.command === "triggerOsintSearch" && msg.args?.query) {
+          const evTab = new CustomEvent("change-active-tab", { detail: "osint" });
+          window.dispatchEvent(evTab);
+          setTimeout(() => {
+            const evSearch = new CustomEvent("trigger-osint-search", { detail: { query: msg.args.query } });
+            window.dispatchEvent(evSearch);
+          }, 300);
+        } else if (msg.command === "triggerSystemScan") {
+          const evTab = new CustomEvent("change-active-tab", { detail: "audit-log" });
+          window.dispatchEvent(evTab);
+          const evScan = new CustomEvent("trigger-system-scan");
+          window.dispatchEvent(evScan);
+        }
+        return;
+      }
+
       if (msg.text) {
         setMessages(prev => {
           // If the last message is from bot, append to it, else create new

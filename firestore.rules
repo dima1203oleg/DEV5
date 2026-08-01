@@ -102,6 +102,15 @@ service cloud.firestore {
              data.timestamp is string && data.timestamp.size() <= 50;
     }
 
+    
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['action', 'user', 'timestamp']) &&
+             data.action is string && data.action in ['LOGIN', 'SEARCH', 'AI_REQUEST', 'EXPORT', 'REPORT', 'SYSTEM'] &&
+             data.user is string && data.user.size() <= 100 &&
+             (!('details' in data) || (data.details is string && data.details.size() <= 1000)) &&
+             data.timestamp is string && data.timestamp.size() <= 50;
+    }
+
     // 3. Match rules for collections
     match /users/{userId} {
       allow get: if isOwner(userId);
@@ -174,5 +183,29 @@ service cloud.firestore {
                        ]);
       allow delete: if isSignedIn();
     }
+
+    match /investigations/{docId} {
+      allow read: if true;
+      allow create: if isValidId(docId);
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    match /entity_graphs/{docId} {
+      allow read: if true;
+      allow create: if isValidId(docId);
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    match /audit_logs/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+                      isValidId(docId) &&
+                      isValidAuditLog(incoming());
+      allow update: if false;
+      allow delete: if false;
+    }
+
   }
 }

@@ -1,17 +1,12 @@
 import { useToast } from './ToastProvider';
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- * NEXUS - Advanced OSINT Sandbox & Investigation Board ("Павутина")
- */
-
-import React, { useContext,  useState, useRef, useEffect, useMemo } from 'react';
+import { useInvestigationSync } from '../hooks/useInvestigationSync';
 import { 
   Network, Plus, Trash2, ArrowRight, ShieldAlert, Sparkles, HelpCircle,
   TrendingUp, Download, Eye, FileText, Share2, ZoomIn, ZoomOut, Maximize2, 
   RotateCcw, AlertTriangle, CheckCircle, ChevronRight, Check, X, Sliders,
-  User, Briefcase, Landmark, Info, Zap, RefreshCw, Layers
+  User, Briefcase, Landmark, Info, Zap, RefreshCw, Layers, Cloud, Loader2
 } from 'lucide-react';
+import React, { useContext, useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OSINT_ENTITIES, OsintEntity } from '../osintData';
 
@@ -38,86 +33,98 @@ interface SandboxLink {
   flowDirection: 'forward' | 'backward' | 'none';
 }
 
+const DEFAULT_INITIAL_NODES: SandboxNode[] = [
+  {
+    id: 'comp-1',
+    name: "ТОВ 'СпецТехПостач'",
+    type: 'company',
+    code: '38294012',
+    baseRisk: 94,
+    cascadedRisk: 94,
+    status: 'SANCTIONED',
+    description: "Оборонні замовлення, підозра в обході санкцій через турецьких посередників.",
+    x: 180,
+    y: 150
+  },
+  {
+    id: 'person-1',
+    name: "Коваленко Ігор Вікторович",
+    type: 'person',
+    code: 'PEP-92841',
+    baseRisk: 82,
+    cascadedRisk: 82,
+    status: 'SUSPICIOUS',
+    description: "Колишній чиновник держзакупівель, пов'язаний з ТОВ 'СпецТехПостач'.",
+    x: 480,
+    y: 130
+  },
+  {
+    id: 'comp-2',
+    name: "ТОВ 'Арсенал Сек'юріті'",
+    type: 'company',
+    code: '41920491',
+    baseRisk: 45,
+    cascadedRisk: 45,
+    status: 'ACTIVE',
+    description: "Охоронна компанія, забезпечує периметр державних складів.",
+    x: 320,
+    y: 360
+  },
+  {
+    id: 'wallet-1',
+    name: "Crypto-Wallet (0x38ac...d831)",
+    type: 'cryptowallet',
+    code: 'BTC-TRX-02',
+    baseRisk: 89,
+    cascadedRisk: 89,
+    status: 'SUSPICIOUS',
+    description: "Децентралізована адреса, використовувалась для анонімних транзакцій.",
+    x: 620,
+    y: 350
+  }
+];
+
+const DEFAULT_INITIAL_LINKS: SandboxLink[] = [
+  {
+    id: 'link-1',
+    source: 'person-1',
+    target: 'comp-1',
+    label: 'Фактичний бенефіціар',
+    multiplier: 0.9,
+    flowDirection: 'forward'
+  },
+  {
+    id: 'link-2',
+    source: 'comp-1',
+    target: 'comp-2',
+    label: 'Спільне майно / Оренда',
+    multiplier: 0.4,
+    flowDirection: 'none'
+  },
+  {
+    id: 'link-3',
+    source: 'person-1',
+    target: 'wallet-1',
+    label: 'Виведення коштів',
+    multiplier: 0.8,
+    flowDirection: 'forward'
+  }
+];
+
 export default function InvestigationSandbox() {
   const { showToast } = useToast();
-  // Initial Nodes & Links - populate with standard entities to give an impressive out-of-the-box experience
-  const [nodes, setNodes] = useState<SandboxNode[]>([
-    {
-      id: 'comp-1',
-      name: "ТОВ 'СпецТехПостач'",
-      type: 'company',
-      code: '38294012',
-      baseRisk: 94,
-      cascadedRisk: 94,
-      status: 'SANCTIONED',
-      description: "Оборонні замовлення, підозра в обході санкцій через турецьких посередників.",
-      x: 180,
-      y: 150
-    },
-    {
-      id: 'person-1',
-      name: "Коваленко Ігор Вікторович",
-      type: 'person',
-      code: 'PEP-92841',
-      baseRisk: 82,
-      cascadedRisk: 82,
-      status: 'SUSPICIOUS',
-      description: "Колишній чиновник держзакупівель, пов'язаний з ТОВ 'СпецТехПостач'.",
-      x: 480,
-      y: 130
-    },
-    {
-      id: 'comp-2',
-      name: "ТОВ 'Арсенал Сек'юріті'",
-      type: 'company',
-      code: '41920491',
-      baseRisk: 45,
-      cascadedRisk: 45,
-      status: 'ACTIVE',
-      description: "Охоронна компанія, забезпечує периметр державних складів.",
-      x: 320,
-      y: 360
-    },
-    {
-      id: 'wallet-1',
-      name: "Crypto-Wallet (0x38ac...d831)",
-      type: 'cryptowallet',
-      code: 'BTC-TRX-02',
-      baseRisk: 89,
-      cascadedRisk: 89,
-      status: 'SUSPICIOUS',
-      description: "Децентралізована адреса, використовувалась для анонімних транзакцій.",
-      x: 620,
-      y: 350
-    }
-  ]);
 
-  const [links, setLinks] = useState<SandboxLink[]>([
-    {
-      id: 'link-1',
-      source: 'person-1',
-      target: 'comp-1',
-      label: 'Фактичний бенефіціар',
-      multiplier: 0.9,
-      flowDirection: 'forward'
-    },
-    {
-      id: 'link-2',
-      source: 'comp-1',
-      target: 'comp-2',
-      label: 'Спільне майно / Оренда',
-      multiplier: 0.4,
-      flowDirection: 'none'
-    },
-    {
-      id: 'link-3',
-      source: 'person-1',
-      target: 'wallet-1',
-      label: 'Виведення коштів',
-      multiplier: 0.8,
-      flowDirection: 'forward'
-    }
-  ]);
+  // Real-time Firestore synchronized nodes & links via useInvestigationSync
+  const {
+    nodes,
+    links,
+    setNodes,
+    setLinks,
+    syncStatus,
+    lastSyncedAt,
+    cloudSynced,
+    saveNow
+  } = useInvestigationSync('inv-sandbox-main', DEFAULT_INITIAL_NODES, DEFAULT_INITIAL_LINKS);
 
   // Sandbox UI States
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -586,7 +593,48 @@ export default function InvestigationSandbox() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Firestore Live Sync Status Badge */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-xl font-mono text-xs shadow-inner">
+            {syncStatus === 'SYNCING' && (
+              <>
+                <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                <span className="text-amber-400 font-bold">Синхронізація...</span>
+              </>
+            )}
+            {syncStatus === 'SAVED' && (
+              <>
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-emerald-400 font-bold">Firestore: Збережено</span>
+              </>
+            )}
+            {syncStatus === 'OFFLINE' && (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-amber-500 font-bold">Офлайн</span>
+              </>
+            )}
+            {syncStatus === 'ERROR' && (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                <span className="text-rose-400 font-bold">Помилка хмари</span>
+              </>
+            )}
+            {syncStatus === 'IDLE' && (
+              <>
+                <Cloud className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-slate-300 font-bold">Firestore Live</span>
+              </>
+            )}
+            <button 
+              onClick={saveNow}
+              title="Примусово синхронізувати з Firestore"
+              className="ml-1 p-0.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </button>
+          </div>
+
           <button 
             onClick={() => setShowAddNodeModal(true)}
             className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold font-mono tracking-wider flex items-center gap-1.5 cursor-pointer shadow transition-all"

@@ -107,7 +107,7 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
   ]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Global Clear All function that resets search, filters, dates, error state and inspect targets
+  // Global Clear All function that resets search, filters, dates, error state, entities and inspect targets
   const handleResetAll = () => {
     setSearchQuery('');
     setActiveFilter('all');
@@ -117,10 +117,10 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
     setEndDate('');
     setShowSuggestions(false);
     setLiveSearchError(null);
-    setEntities(OSINT_ENTITIES);
-    setSelectedEntityIds(OSINT_ENTITIES.map(e => e.id));
+    setEntities([]); // Immediately clear all previously found objects
+    setSelectedEntityIds([]);
     onSelectEntityForInspector(null);
-    showToast('Повністю очищено та скинуто всі пошукові фільтри, юридичні та фізичні особи!', 'success');
+    showToast('Повністю очищено всі попередньо знайдені об\'єкти, запити та картки!', 'success');
   };
   const [showReportModal, setShowReportModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -200,9 +200,10 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
   const [endDate, setEndDate] = useState<string>('');
   const [osintMode, setOsintMode] = useState<'search' | 'person-profiler'>('search');
 
-  const getRiskDynamicsData = useMemo(() => (entity: OsintEntity) => {
+  const getRiskDynamicsData = useMemo(() => (entity?: OsintEntity | null) => {
+    if (!entity) return [];
     const hash = entity.id.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
-    const baseRisk = entity.riskScore;
+    const baseRisk = entity.riskScore || 0;
     const data = [];
     const months = ['Сер', 'Вер', 'Жов', 'Лис', 'Гру', 'Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер', 'Лип'];
     for (let i = 0; i < 12; i++) {
@@ -589,6 +590,18 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
       setRecentSearches(prev => [queryText, ...prev.slice(0, 3)]);
     }
   };
+
+  React.useEffect(() => {
+    const handleVoiceSearch = (e: Event) => {
+      const customEvent = e as CustomEvent<{ query: string }>;
+      if (customEvent.detail && customEvent.detail.query) {
+        setSearchQuery(customEvent.detail.query);
+        handleSearchSubmit(customEvent.detail.query, true);
+      }
+    };
+    window.addEventListener("trigger-osint-search", handleVoiceSearch);
+    return () => window.removeEventListener("trigger-osint-search", handleVoiceSearch);
+  }, [entities]);
 
   const getRiskColor = (score: number) => {
     if (score >= 80) return 'text-rose-500 border-slate-800 bg-rose-500/5';
@@ -1409,18 +1422,25 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
 
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {filteredEntities.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 font-mono text-xs space-y-2">
-                  <p>Збігів не знайдено</p>
+                <div className="text-center py-12 text-slate-500 font-mono text-xs space-y-3 p-4 bg-slate-950/40 rounded-2xl border border-slate-800/80">
+                  <Trash2 className="w-8 h-8 text-rose-500/60 mx-auto" />
+                  <p className="text-slate-200 font-bold text-sm">Усі об'єкти в розділі очищено</p>
+                  <p className="text-slate-400 text-xs">Попередньо знайдені картки та пошуковий вміст повністю видалено з екрана.</p>
                   <button
-                    onClick={handleResetAll}
-                    className="text-xs text-blue-400 hover:text-blue-300 font-bold underline cursor-pointer"
+                    onClick={() => {
+                      setEntities(OSINT_ENTITIES);
+                      setSelectedEntityIds(OSINT_ENTITIES.map(e => e.id));
+                      showToast("Стандартний демо-список об'єктів відновлено", "info");
+                    }}
+                    className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer inline-flex items-center gap-1.5"
                   >
-                    Скинути всі фільтри та показати всі об'єкти
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Відновити стандартний список</span>
                   </button>
                 </div>
               ) : (
                 filteredEntities.map((entity) => {
-                  const isSelected = activeEntity.id === entity.id;
+                  const isSelected = activeEntity && activeEntity.id === entity.id;
                   const isChecked = selectedEntityIds.includes(entity.id);
                   const theme = getRiskTheme(entity.riskScore);
                   return (
@@ -1715,6 +1735,15 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
 
         {/* Middle Column: Dossier Card Profile (Section 13) */}
         <div className="xl:col-span-4 space-y-6" id="osint-dossier-panel">
+          {!activeEntity ? (
+            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center space-y-4 shadow-xl">
+              <User className="w-12 h-12 text-slate-600 mx-auto" />
+              <h3 className="text-base font-bold text-slate-200">Досьє об'єкта порожнє</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Усі об'єкти очищено або видалено. Виберіть об'єкт зі списку або натисніть "Відновити стандартний список" у панелі пошуку.
+              </p>
+            </div>
+          ) : (
           <div className={`bg-slate-900/40 border rounded-2xl overflow-hidden shadow-xl transition-all duration-500 ${activeEntity.riskScore > 75 ? 'border-slate-800 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : activeEntity.riskScore > 50 ? 'border-slate-800 shadow-[0_0_40px_rgba(245,158,11,0.05)]' : 'border-slate-800'}`}>
             
             {/* Dossier Header */}
@@ -2053,11 +2082,21 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
 
             </div>
           </div>
+          )}
         </div>
 
         {/* Right Column: Dynamic Link Graph & Cargo Routes Visualizers (Section 14 & 15) */}
         <div className="xl:col-span-5 space-y-6" id="osint-visualizer-panel">
-          
+          {!activeEntity ? (
+            <div className="glass-panel-premium border border-slate-800 rounded-2xl p-8 text-center space-y-4 shadow-xl">
+              <Network className="w-12 h-12 text-slate-600 mx-auto" />
+              <h3 className="text-base font-bold text-slate-200">Візуалізатор зв'язків порожній</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Граф та геопросторові картографічні шари стануть доступні після обрання активного об'єкта.
+              </p>
+            </div>
+          ) : (
+          <>
           {/* Force Graph (Section 14) */}
           <div className="glass-panel-premium border-slate-800 rounded-2xl p-2 shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -2853,6 +2892,7 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
               </div>
             </div>
           </div>
+          </>)}
           </>)}
 
         </div>
