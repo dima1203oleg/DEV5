@@ -30,7 +30,7 @@ export default function InspectorPanel({ selectedEntity, selectedTool, selectedN
     if (!selectedEntity) return [];
     const related = new Map();
 
-    selectedEntity.relationships.forEach(rel => {
+     (selectedEntity.relationships || []).forEach(rel => {
       const target = OSINT_ENTITIES.find(e => e.id === rel.targetId);
       if (target) {
         related.set(target.id, { entity: target, type: rel.type, risk: rel.risk, direction: 'outgoing' });
@@ -38,7 +38,7 @@ export default function InspectorPanel({ selectedEntity, selectedTool, selectedN
     });
 
     OSINT_ENTITIES.forEach(entity => {
-      entity.relationships.forEach(rel => {
+       (entity.relationships || []).forEach(rel => {
         if (rel.targetId === selectedEntity.id) {
           if (!related.has(entity.id)) {
              related.set(entity.id, { entity, type: rel.type, risk: rel.risk, direction: 'incoming' });

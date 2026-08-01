@@ -18,6 +18,7 @@ import DataIngestionTab from "./components/DataIngestionTab";
 import InspectorPanel from "./components/InspectorPanel";
 import LiveAnalyticalCenter from "./components/LiveAnalyticalCenter";
 import AdminBackOffice from "./components/AdminBackOffice";
+import CKANExplorerTab from "./components/CKANExplorerTab";
 import AutonomousFactory from "./components/AutonomousFactory";
 import MapsTab from "./components/MapsTab";
 import InvestigationSandbox from "./components/InvestigationSandbox";
@@ -785,6 +786,7 @@ export default function App() {
           type: "nav",
         },
         { id: "dashboard", label: "📊 Інтерактивний Дашборд", type: "nav" },
+        { id: "ckan-explorer", label: "🇺🇦 Провідник Data.gov.ua (CKAN)", type: "nav" },
         { id: "osint", label: "🔍 Робочий стіл OSINT пошуку", type: "nav" },
         { id: "person-profiler", label: "👤 Перевірка та Досьє Осіб", type: "nav" },
         {
@@ -1104,6 +1106,7 @@ export default function App() {
                   )}
                   {activeTab === "media-forensics" && <MediaForensicsTab />}
                   {activeTab === "data-ingestion" && <DataIngestionTab />}
+                  {activeTab === "ckan-explorer" && <CKANExplorerTab />}
                 </>
               ) : (
                 <>
@@ -1210,6 +1213,9 @@ export default function App() {
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2 px-1">
                           Розслідування
                         </span>
+                        <button onClick={() => {setActiveTab("ckan-explorer"); setMobileMenuOpen(false);}} className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg flex items-center gap-3">
+                          <Database className="w-4 h-4"/> CKAN (Data.gov.ua)
+                        </button>
                         <button onClick={() => {setActiveTab("osint"); setMobileMenuOpen(false);}} className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg flex items-center gap-3">
                           <Search className="w-4 h-4"/> Глибокий Пошук
                         </button>
@@ -1570,6 +1576,14 @@ export default function App() {
                       )}
 
                       <button
+                        onClick={() => setActiveTab("ckan-explorer")}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeTab === "ckan-explorer" ? "bg-emerald-500/10 text-emerald-400" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`}
+                      >
+                        <Database className={`w-4 h-4 ${activeTab === "ckan-explorer" ? "text-emerald-400" : "text-slate-400"}`} />
+                        {!sidebarCollapsed && <span>CKAN (Data.gov.ua)</span>}
+                      </button>
+
+                      <button
                         onClick={() => setActiveTab("osint")}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeTab === "osint" ? "bg-blue-500/10 text-blue-400" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`}
                       >
@@ -1841,6 +1855,7 @@ export default function App() {
                 {activeTab === "advisor" && <AdvisorTab />}
                 {activeTab === "media-forensics" && <MediaForensicsTab />}
                 {activeTab === "data-ingestion" && <DataIngestionTab />}
+                {activeTab === "ckan-explorer" && <CKANExplorerTab />}
                 {activeTab === "autonomous-factory" && <AutonomousFactory />}
               </motion.div>
             </AnimatePresence>

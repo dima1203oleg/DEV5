@@ -367,7 +367,7 @@ export default function LiveAnalyticalCenter({
 
         const voicePhrases = [
           `Аналізую суб'єкт ${nextEntity.name}. Рівень загрози: ${nextEntity.riskScore} відсотків.`,
-          `Проводжу семантичний аналіз зв'язків. Виявлено ${nextEntity.relationships.length} залежностей.`,
+          `Проводжу семантичний аналіз зв'язків. Виявлено ${(nextEntity.relationships || []).length} залежностей.`,
           `Співвідношу компанію з базою Qdrant. Запускаю моделювання ризиків.`,
           `ШІ-перевірка завершена. Оновлено статус здоров'я системи.`,
         ];

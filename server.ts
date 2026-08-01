@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import { LiveServerMessage, Modality } from "@google/genai";
+import { setupCkanRoutes } from "./server/connectors/ckan/api";
 
 import { GoogleGenAI, Type, ThinkingLevel, GenerateVideosOperation } from "@google/genai";
 import dotenv from "dotenv";
@@ -14,6 +15,9 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '50mb' }));
+
+// Initialize CKAN Routes
+setupCkanRoutes(app);
 
 // Initialize Gemini API
 const apiKey = process.env.GEMINI_API_KEY;

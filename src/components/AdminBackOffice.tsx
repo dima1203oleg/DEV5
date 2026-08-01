@@ -1,5 +1,6 @@
 import { useToast } from './ToastProvider';
 import ConnectorHealthDashboard from './ConnectorHealthDashboard';
+import ApiDiagnosticDashboard from './ApiDiagnosticDashboard';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -59,6 +60,7 @@ type AdminSection =
   | "ai-models"
   | "data-sources-etl"
   | "connector-health"
+  | "api-diagnostics"
   | "monitoring-logs"
   | "security-devops";
 
@@ -926,6 +928,11 @@ export default function AdminBackOffice() {
               id: "connector-health",
               label: "⚡ Connector Health",
               icon: Zap,
+            },
+            {
+              id: "api-diagnostics",
+              label: "📡 API Драйвери",
+              icon: Activity,
             },
             {
               id: "monitoring-logs",
@@ -1928,6 +1935,11 @@ export default function AdminBackOffice() {
         {/* 5.5 CONNECTOR HEALTH DASHBOARD */}
         {activeSection === "connector-health" && (
           <ConnectorHealthDashboard />
+        )}
+
+        {/* 6.5. API DIAGNOSTICS */}
+        {activeSection === "api-diagnostics" && (
+          <ApiDiagnosticDashboard />
         )}
 
         {/* 6. LOG CONSOLE & SYSTEM TELEMETRY */}

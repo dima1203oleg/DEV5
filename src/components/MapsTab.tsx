@@ -873,7 +873,7 @@ export default function MapsTab({ onSelectEntityGlobal }: MapsTabProps) {
                 </span>
                 
                 <div className="grid grid-cols-1 gap-1.5 text-xs font-mono">
-                  {selectedEntity.relationships.map((rel, idx) => (
+                  {(selectedEntity.relationships || []).map((rel, idx) => (
                     <div 
                       key={idx}
                       onClick={() => {

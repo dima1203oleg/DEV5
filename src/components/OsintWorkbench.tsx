@@ -2089,7 +2089,7 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
                 {/* Connective lines */}
                 <g stroke="#1e293b" strokeWidth="1.5">
                   {/* Central Node is always (300, 160) */}
-                  {activeEntity.relationships.map((rel, i) => {
+                  {(activeEntity.relationships || []).map((rel, i) => {
                      const coords = [
                        {x: 160, y: 80},
                        {x: 440, y: 80},
@@ -2125,7 +2125,7 @@ export default function OsintWorkbench({ onSelectEntityForInspector, selectedEnt
                   </g>
                   
                   {/* Connected Target Nodes */}
-                  {activeEntity.relationships.map((rel, i) => {
+                  {(activeEntity.relationships || []).map((rel, i) => {
                      const coords = [
                        {x: 160, y: 80, rx: 210, ry: 120, rot: -30},
                        {x: 440, y: 80, rx: 380, ry: 120, rot: 30},
